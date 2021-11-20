@@ -15,8 +15,6 @@ type env = (string * stype) list
 (* Listes d'equations *) 
 type equations = (stype * stype) list
 
-type equations_pair = equations * equations
-
 let rec print_terme (lt : lterme) : string = 
   match lt with
   | Var x -> x
@@ -78,27 +76,9 @@ let rec substitue (v : string) (t_sub : stype) (t : stype) =
 let substitue_all (v : string) (t_sub : stype) (eqs : equations) : equations = 
   List.map (fun (t1, t2) -> (substitue v t_sub t1, substitue v t_sub t2)) eqs
 
-let substitue_all_pair (v : string) (t_sub : stype) ((e1, e2): equations_pair) : equations_pair = 
-  (substitue_all v t_sub e1, substitue_all v t_sub e2)
-
 exception UnificationCycle
 
-(* let rec unification (eqs_pair : equations_pair) : equations_pair = 
-  match eqs_pair with
-  | (e1, []) -> (e1, [])
-  | (e1, (t1, t2)::e2) when stype_equal t1 t2 -> unification (e1, e2)
-  | (e1, (Var v, t)::e2) | (e1, (t, Var v)::e2) ->
-    if occur_check v t then
-      raise UnificationCycle
-    else
-      (substitue_all v t e1, substitue_all v t e2)
-  | (e1, (Arr (t1, t2), Arr (t3, t4))::e2) -> (e1, (t1, t3)::(t2, t4)::e2) *)
-
 let rec unification (eqs_uni : equations) (eqs : equations) (var : string) : equations = 
-  (* print_endline "eqs_uni";
-  List.iter (fun (st1, st2) -> print_endline ((print_type st1) ^ " = " ^ (print_type st2))) eqs_uni;
-  print_endline "eqs";
-  List.iter (fun (st1, st2) -> print_endline ((print_type st1) ^ " = " ^ (print_type st2))) eqs; *)
   match eqs_uni, eqs with
   | e1, [] -> e1
   | e1, (Var v, t)::e2 when v == var -> unification ((Var v, t)::e1) e2 var
@@ -110,10 +90,6 @@ let rec unification (eqs_uni : equations) (eqs : equations) (var : string) : equ
       unification (substitue_all v t e1) (substitue_all v t e2) var
   | e1, (Arr (t1, t2), Arr (t3, t4))::e2 -> unification e1 ((t1, t3)::(t2, t4)::e2) var
   
-
-(* let solve (eqs : equations) : equations = 
-  fst (unification [] eqs) *)
-
 let rec find_type_in_equations (var : string) (eqs : equations) : stype = 
   match eqs with
   | [] -> raise VarPasTrouve
@@ -124,10 +100,6 @@ let rec find_type_in_equations (var : string) (eqs : equations) : stype =
 let inference (lt : lterme) : string = 
   let var = "T" in
   let eqs = gen_equas lt (Var var) [] in
-  (* List.iter (fun (st1, st2) -> print_endline ((print_type st1) ^ " = " ^ (print_type st2))) eqs;
-  print_endline "Unification";
-  let eqs_uni = unification [] eqs var in
-  List.iter (fun (st1, st2) -> print_endline ((print_type st1) ^ " = " ^ (print_type st2))) eqs_uni; *)
   try
     let eqs_uni = unification [] eqs var in
     let res = find_type_in_equations var eqs_uni in
